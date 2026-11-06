@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: Type-check, unit tests, build, accessibility
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Unit tests (scoring, k-anonymity, i18n)
+        run: npm test
+
+      - name: Type-check and production build
+        run: npm run build
+
+      - name: Install Chromium for the accessibility walk
+        run: npx playwright install --with-deps chromium
+
+      # Walks home → 14 questions → result at phone and desktop widths, in both
+      # languages, and fails on any axe-core violation or horizontal overflow.
+      # The Pwned Passwords request is stubbed, so no network is needed.
+      - name: Accessibility and end-to-end walk (axe-core)
+        run: npm run a11y
+
+      - name: Bundle size
+        run: npm run size
